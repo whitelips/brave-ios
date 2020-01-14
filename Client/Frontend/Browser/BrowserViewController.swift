@@ -1089,9 +1089,9 @@ class BrowserViewController: UIViewController {
                 hideHomePanelController()
                 return
             }
-            if url.isAboutHomeURL && !url.isErrorPageURL {
+            if url.isAboutHomeURL && !url.isErrorPageURL && !url.isInterstitialURL {
                 showHomePanelController(inline: true)
-            } else if !url.isLocalUtility || url.isReaderModeURL || url.isErrorPageURL {
+            } else if !url.isLocalUtility || url.isReaderModeURL || url.isErrorPageURL || url.isInterstitialURL {
                 hideHomePanelController()
             }
         }
@@ -1604,7 +1604,7 @@ class BrowserViewController: UIViewController {
             // Whether to show search icon or + icon
             toolbar?.setSearchButtonState(url: url)
             
-            if !url.isErrorPageURL, !url.isAboutHomeURL, !url.isFileURL {
+            if !url.isErrorPageURL, !url.isAboutHomeURL, !url.isFileURL, !url.isInterstitialURL {
                 // Fire the readability check. This is here and not in the pageShow event handler in ReaderMode.js anymore
                 // because that event wil not always fire due to unreliable page caching. This will either let us know that
                 // the currently loaded page can be turned into reading mode or if the page already is in reading mode. We
@@ -1849,6 +1849,9 @@ extension BrowserViewController: TopToolbarDelegate {
         // use the initial value for the URL so we can do proper pattern matching with search URLs
         var searchURL = self.tabManager.selectedTab?.currentInitialURL
         if searchURL?.isErrorPageURL ?? true {
+            searchURL = topToolbar
+        }
+        if searchURL?.isInterstitialURL ?? true {
             searchURL = topToolbar
         }
         if let query = profile.searchEngines.queryForSearchURL(searchURL as URL?) {
