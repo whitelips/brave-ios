@@ -635,6 +635,7 @@ class BrowserViewController: UIViewController {
         scrollController.tabsBar = tabsBar
         scrollController.footer = footer
         scrollController.snackBars = alertStackView
+        scrollController.nowPlayingBar = nowPlayingBar
 
         self.updateToolbarStateForTraitCollection(self.traitCollection)
 
@@ -726,10 +727,6 @@ class BrowserViewController: UIViewController {
 
         webViewContainerBackdrop.snp.makeConstraints { make in
             make.edges.equalTo(webViewContainer)
-        }
-        
-        nowPlayingBar.snp.makeConstraints { make in
-            make.left.right.bottom.equalTo(webViewContainer)
         }
         
         topTouchArea.snp.makeConstraints { make in
@@ -1037,6 +1034,12 @@ class BrowserViewController: UIViewController {
             } else {
                 make.bottom.equalTo(self.view.safeArea.bottom)
             }
+        }
+        
+        nowPlayingBar.snp.remakeConstraints { make in
+            make.left.right.equalTo(webViewContainer).inset(8)
+            make.height.equalTo(50)
+            scrollController.nowPlayingBottomConstraint = make.bottom.equalTo(webViewContainer).inset(8).constraint
         }
         
         // Setup the bottom toolbar
@@ -3653,10 +3656,15 @@ extension BrowserViewController: NowPlayingBarDelegate {
             let items = tab.playlistItems.value
             if items.count > 1 {
                 let controller = PlaylistMultipleSelectionController(tabManager: self.tabManager)
-                self.present(controller, animated: true, completion: nil)
-            } else {
-                let controller = UINavigationController(rootViewController: PlaylistViewController(tabManager: self.tabManager))
-                self.present(controller, animated: true, completion: nil)
+                self.present(controller, animated: false, completion: nil)
+            } else if let item = items.first {
+                Playlist.shared.addItem(item: item, cachedData: nil) { [weak self] in
+                    DispatchQueue.main.async {
+                        guard let self = self else { return }
+                        CarplayMediaManager.shared.updateItems()
+                        self.tabManager.allTabs.forEach({ $0.playlistItems.refresh() })
+                    }
+                }
             }
         }
     }
